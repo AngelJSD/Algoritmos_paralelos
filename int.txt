@@ -1,0 +1,87 @@
+int Reduce(int my_val, int in_val, int my_rank, int root, int p, MPI_Datatype datatype, MPI_Comm comm) {
+   int        partner, partner1, aux, acum;
+   char *opBuf = new char[count*iSizeof(datatype)];
+   unsigned   bitmask = 1;
+   while (bitmask < p) bitmask <<= 1;
+   bitmask >>= 1;
+   int        participate = bitmask << 1;
+
+//#  ifdef DEBUG
+   printf("Proc %d > bitmask = %d\n", my_rank, bitmask);
+   fflush(stdout);
+//#  endif
+   while (bitmask > 0) {
+   aux=my_rank-root;
+   if (aux<0) aux+=p;   
+   if (aux < participate) {
+	 
+         partner = ((aux ^ bitmask)+root)%p;
+         partner1 = aux ^ bitmask;
+//#        ifdef DEBUG
+         printf("Proc %d > bitmask = %d, in_val = %d, partner = %d, aux = %d\n",
+            my_rank, bitmask, in_val, partner,aux);
+         fflush(stdout);
+//#        endif
+         if (aux > partner1) {
+            if (partner < p ){
+	       printf("Proc %d, envio %d\n", my_rank, in_val);
+               MPI_Send(&in_val, 1, MPI_INT, partner, 0, comm);
+            }
+         } else {
+            MPI_Recv(&acum, 1, MPI_INT, partner, 0, comm, 
+                  MPI_STATUS_IGNORE);
+            printf("Proc %d, recivo %d de %d\n", my_rank, acum,partner);
+            in_val+=acum;
+            
+         }
+      }
+      bitmask >>= 1;
+      participate >>= 1;
+   }
+   return in_val;
+
+
+int Reduce(void *my_val, void *in_val, int count, int my_rank, int root, int p, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
+   int        partner, partner1, aux;
+   struct buff *acum = new buff[count*iSizeof(datatype)];
+   unsigned   bitmask = 1;
+   while (bitmask < p) bitmask <<= 1;
+   bitmask >>= 1;
+   int        participate = bitmask << 1;
+
+//#  ifdef DEBUG
+   printf("Proc %d > bitmask = %d\n", my_rank, bitmask);
+   fflush(stdout);
+//#  endif
+   while (bitmask > 0) {
+   aux=my_rank-root;
+   if (aux<0) aux+=p;   
+   if (aux < participate) {
+	 
+         partner = ((aux ^ bitmask)+root)%p;
+         partner1 = aux ^ bitmask;
+//#        ifdef DEBUG
+         printf("Proc %d > bitmask = %d, in_val = %d, partner = %d, aux = %d\n",
+            my_rank, bitmask, in_val, partner,aux);
+         fflush(stdout);
+//#        endif
+         if (aux > partner1) {
+            if (partner < p ){
+	       printf("Proc %d, envio %d\n", my_rank, in_val[0]);
+               MPI_Send(&in_val, 1, MPI_INT, partner, 0, comm);
+            }
+         } else {
+            MPI_Recv(acum, 1, MPI_INT, partner, 0, comm, 
+                  MPI_STATUS_IGNORE);
+            printf("Proc %d, recivo %d de %d\n", my_rank, acum[0],partner);
+            //in_val+=acum;
+            MPI_PerformOp(in_val, acum, count, datatype, op);
+            
+         }
+      }
+      bitmask >>= 1;
+      participate >>= 1;
+   }
+   return in_val;
+
+}
