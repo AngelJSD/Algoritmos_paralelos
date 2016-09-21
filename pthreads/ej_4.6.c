@@ -2,12 +2,15 @@
 #include <time.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 pthread_mutex_t head_p_mutex;
 struct list_node_s* lista = NULL;
 pthread_mutex_t list_mutex;
 pthread_mutex_t rw_mutex;
 pthread_rwlock_t rwlock;
+
+bool read, write;
 
 struct list_node_s{
 
@@ -245,7 +248,7 @@ void Read_lock(){
     while(write);
     pthread_mutex_lock(&rw_mutex);
     read=1;
-    pthread_mutex_lock(&rw_mutex);
+    pthread_mutex_unlock(&rw_mutex);
 }
 
 void Write_lock(){
@@ -253,7 +256,7 @@ void Write_lock(){
     while(read);
     pthread_mutex_lock(&rw_mutex);
     write=1;
-    pthread_mutex_lock(&rw_mutex);
+    pthread_mutex_unlock(&rw_mutex);
 }
 
 void Unlock(){
@@ -261,7 +264,7 @@ void Unlock(){
     pthread_mutex_lock(&rw_mutex);
     read=0;
     write=0;
-    pthread_mutex_lock(&rw_mutex);
+    pthread_mutex_unlock(&rw_mutex);
 
 }
 
@@ -270,11 +273,13 @@ void* Operaciones(void* id){
 	int num[10000];
 
 	for(i = 0; i <= 10000; ++i){
+		//printf("SI\n");
 		Write_lock();
 		num[i]=	rand() % 10000;
 		Insert(num[i], &lista);
 		Unlock();
 	}
+	printf("SI\n");
 	for(i = 0; i <= 80000; ++i){
 		Read_lock();
 		Member(rand() % 10000, lista);
